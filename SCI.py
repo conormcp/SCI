@@ -66,7 +66,7 @@ def sim_run(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, 
   rad = np.zeros((steps,bins,bins))
   rad_dens = np.zeros((steps,bins,bins))
   # Sample on even steps in r^2 to get even areal coverage
-  bc = np.sqrt(np.linspace(bmin,bmax, steps))
+  bc = np.sqrt(np.linspace(bmin**2,bmax**2, steps))
   for i in range(steps):
     print i
     if i == 0: d_range = None
@@ -90,7 +90,7 @@ def sim_run(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, 
 
 def run_mp(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, tsteps=1000, save=False, alpha=0.1, nproc=4):
   # Sample on even steps in r^2 to get even areal coverage
-  bc = np.sqrt(np.linspace(bmin,bmax, steps))
+  bc = np.sqrt(np.linspace(bmin**2,bmax**2, steps))
   # Run first simulation outside of multiprocessing loop 
   # to grab density limits from orbit with the smallest impact parameter b
   sim = Simulation(res=res, b=bc[0], v0=v0, vt0=vt0, tmax=tmax, tsteps=tsteps, bins=bins, alpha=alpha, d_plt_range=None, save=save)
