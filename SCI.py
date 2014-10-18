@@ -116,8 +116,8 @@ def combine_mp(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=
   for i in range(steps):
     print i
     sim = fits.getdata('steps/model_step_bins%i_res%i_v%i_vt%i_nodm_b%2.3f.fits' % (bins, res, v0, vt0, bc[i]) )
-    dens[i] = sim[0]
-    rad[i] = sim[1]
+    rad[i] = sim[0]
+    dens[i] = sim[1]
     rad_dens[i] = sim[2]
     if i > 0:
       dens[i] += dens[i-1]
