@@ -44,21 +44,26 @@ class Simulation:
 
   def integrate(self):
     if self.save: print 'Integrating b = ', self.b
-    for i in np.arccos(2*np.linspace(0,1.,self.res)-1):  # Integrate over elevation angle
-      for j in np.linspace(0,2*np.pi,self.res):          # Integrate over azimuthal angle
-        for k in np.linspace(0,2*np.pi,self.res):        # Integrate over cylinder
-          rorb = self.orb.projection(phi=i, theta=j, inclination=k)
-          # Weighting terms for probability
-          weight = self.gal.dm_t * (self.alpha + (1-self.alpha) * np.sin(rorb.visibility()[self.gal.event]) )
-          self.ri_hist += np.histogram2d(rorb.incidence()[self.gal.event], 
-                                         rorb.r[self.gal.event], range=self.r_plt_range,
-                                         bins=self.bins, weights=weight)[0]
-          self.di_hist += np.histogram2d(rorb.incidence()[self.gal.event], np.log10(self.rho),
-                                    range=self.d_plt_range, bins=self.bins, weights=weight)[0]
-          self.rd_hist += np.histogram2d(self.rho, rorb.r[self.gal.event], 
-                                    range=(self.d_plt_range[1],self.r_plt_range[1]), bins=self.bins, weights=weight)[0]
+    for i in np.arccos(2*np.linspace(0,1.,self.res)-1):  # Integrate over zenith angle
+      self.cylinder(theta=0, phi=i, self.res)            # Integrate over cylindrical shell
     out = np.array([self.ri_hist,self.di_hist,self.rd_hist])
     fits.writeto('steps/model_step_bins%i_res%i_v%i_vt%i_nodm_b%2.3f.fits' % (self.bins, self.res, self.v0, self.vt0, self.b), out, clobber=True)
+
+  def cylinder(self, theta, phi, steps):
+    """
+    Add the contribution of a cylindrical shell at a given theta and phi
+    """
+    for k in np.linspace(0,2*np.pi,steps):        # Integrate over cylinder
+      rorb = self.orb.projection(phi=phi, theta=theta, inclination=k)
+      # Weighting terms for probability
+      weight = self.gal.dm_t * (self.alpha + (1-self.alpha) * np.sin(rorb.visibility()[self.gal.event]) )
+      self.ri_hist += np.histogram2d(rorb.incidence()[self.gal.event], 
+                                     rorb.r[self.gal.event], range=self.r_plt_range,
+                                     bins=self.bins, weights=weight)[0]
+      self.di_hist += np.histogram2d(rorb.incidence()[self.gal.event], np.log10(self.rho),
+                                range=self.d_plt_range, bins=self.bins, weights=weight)[0]
+      self.rd_hist += np.histogram2d(self.rho, rorb.r[self.gal.event], 
+                                range=(self.d_plt_range[1],self.r_plt_range[1]), bins=self.bins, weights=weight)[0]
 
 
 def sim_run(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, tsteps=1000, save=False, alpha=0.1):
