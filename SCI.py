@@ -5,6 +5,7 @@
   May 21 2014
 '''
 import numpy as np
+from time import time
 from constants import *
 from cluster import *
 from galaxy import *
@@ -23,6 +24,7 @@ def function(simObj):
 class Simulation:
   def __init__(self, res=60, b=0.1, v0=200, vt0=0, r0=2.5, tmax=5., tsteps=1000, r_plt_range=((0,np.pi),(0,1)), d_plt_range=None, bins=60, alpha=0.1, save=False):
     print 'Calculating orbit for b = ', b
+    start = time()
     self.b = b
     self.v0 = v0
     self.vt0 = vt0
@@ -41,13 +43,16 @@ class Simulation:
     if d_plt_range == None:
       d_plt_range = ((0,np.pi),(np.log10(self.rho.min()),np.log10(self.rho.max())))
     self.d_plt_range = d_plt_range
+    print 'Initialization time = %f sec' % (time()-start)
 
   def integrate(self):
-    if self.save: print 'Integrating b = ', self.b
+    print 'Integrating b = ', self.b
+    start = time()
     for i in np.arccos(2*np.linspace(0,1.,self.res)-1):  # Integrate over zenith angle
-      self.cylinder(theta=0, phi=i, self.res)            # Integrate over cylindrical shell
+      self.cylinder(theta=0, phi=i, steps=self.res)            # Integrate over cylindrical shell
     out = np.array([self.ri_hist,self.di_hist,self.rd_hist])
-    fits.writeto('steps/model_step_bins%i_res%i_v%i_vt%i_nodm_b%2.3f.fits' % (self.bins, self.res, self.v0, self.vt0, self.b), out, clobber=True)
+    if self.save: fits.writeto('steps/model_step_bins%i_res%i_v%i_vt%i_nodm_b%2.3f.fits' % (self.bins, self.res, self.v0, self.vt0, self.b), out, clobber=True)
+    print 'Integration time = %f sec' % (time()-start)
 
   def cylinder(self, theta, phi, steps):
     """
@@ -60,11 +65,10 @@ class Simulation:
       self.ri_hist += np.histogram2d(rorb.incidence()[self.gal.event], 
                                      rorb.r[self.gal.event], range=self.r_plt_range,
                                      bins=self.bins, weights=weight)[0]
-      self.di_hist += np.histogram2d(rorb.incidence()[self.gal.event], np.log10(self.rho),
-                                range=self.d_plt_range, bins=self.bins, weights=weight)[0]
-      self.rd_hist += np.histogram2d(self.rho, rorb.r[self.gal.event], 
-                                range=(self.d_plt_range[1],self.r_plt_range[1]), bins=self.bins, weights=weight)[0]
-
+#      self.di_hist += np.histogram2d(rorb.incidence()[self.gal.event], np.log10(self.rho),
+#                                range=self.d_plt_range, bins=self.bins, weights=weight)[0]
+#      self.rd_hist += np.histogram2d(self.rho, rorb.r[self.gal.event], 
+#                                range=(self.d_plt_range[1],self.r_plt_range[1]), bins=self.bins, weights=weight)[0]
 
 def sim_run(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, tsteps=1000, save=False, alpha=0.1):
   dens = np.zeros((steps,bins,bins))
@@ -77,6 +81,7 @@ def sim_run(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, 
     if i == 0: d_range = None
     else: d_range = sim.d_plt_range
     sim = Simulation(res=res, b=bc[i], v0=v0, vt0=vt0, tmax=tmax, tsteps=tsteps, bins=bins, alpha=alpha, d_plt_range=d_range)
+    sim.integrate()
     dens[i] = sim.di_hist
     rad[i] = sim.ri_hist
     rad_dens[i] = sim.rd_hist
@@ -112,7 +117,7 @@ def run_mp(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, t
 
 def combine_mp(bins=60, steps=50, res=50, v0=200., vt0=0, bmax=1, bmin=0., tmax=5, tsteps=1000, save=False, alpha=0.1):
   # Sample on even steps in r^2 to get even areal coverage
-  bc = np.sqrt(np.linspace(bmin,bmax, steps))
+  bc = np.sqrt(np.linspace(bmin**2,bmax**2, steps))
   # Initialize Output arrays
   dens = np.zeros((steps,bins,bins))
   rad = np.zeros((steps,bins,bins))

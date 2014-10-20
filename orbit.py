@@ -71,43 +71,32 @@ class Orbit:
     angle = np.arccos(cosang)
     return angle
 
-  def projection(self, inclination=None, theta=0., phi=0.):
+  def projection(self, inclination=0, phi=0., theta=None):
     phi = np.pi/2 - phi
     newObj = self.copy()
     newObj.i = inclination
     newObj.theta = theta
-    # Cast 2D orbit into 3D with initial inclination rotation
-    newObj.z = np.zeros(newObj.x.shape)
-    newObj.vz = np.zeros(newObj.x.shape)
-    if inclination != None:
-      newObj.y = self.y.copy() * np.cos(inclination)
-      newObj.vy *= self.vy.copy() * np.cos(inclination)
-      newObj.z = self.y.copy() * np.sin(inclination)
-      newObj.vz *= self.vy.copy() * np.sin(inclination)
-      newObj.r = np.sqrt(newObj.x.copy()**2+newObj.y.copy()**2)  
-
-    # Rotate in phi first
-    x = newObj.x * np.cos(phi)  - newObj.z * np.sin(phi)
-    z = newObj.x * np.sin(phi) + newObj.z * np.cos(phi)
-    vx = newObj.vx * np.cos(phi)  - newObj.vz * np.sin(phi)
-    vz = newObj.vx * np.sin(phi) + newObj.vz * np.cos(phi)
-    newObj.x = x
-    newObj.z = z
-    newObj.vx = vx
-    newObj.vz = vz
-
-    # Rotate in theta
-    x = newObj.x * np.cos(theta) - newObj.y*np.sin(theta) 
-    y = newObj.x * np.sin(theta) + newObj.y*np.cos(theta)
-    vx = newObj.vx * np.cos(theta) - newObj.vy*np.sin(theta) 
-    vy = newObj.vx * np.sin(theta) + newObj.vy*np.cos(theta)
-    newObj.x = x
-    newObj.y = y
-    newObj.vx = vx
-    newObj.vy = vy
-
+    # Cast 2D orbit into 3D with phi and inclination rotations
+    newObj.x = self.x.copy()*np.cos(phi) - self.y.copy() * np.sin(inclination) * np.sin(phi)
+    newObj.vx = self.vx.copy()*np.cos(phi) - self.vy.copy() * np.sin(inclination) * np.sin(phi)
+    newObj.y = self.y.copy() * np.cos(inclination)
+    newObj.vy = self.vy.copy() * np.cos(inclination)
+    newObj.z = self.x.copy() * np.sin(phi) + self.y.copy() * np.sin(inclination) * np.cos(phi)
+    newObj.vz = self.vx.copy() * np.sin(phi) + self.vy.copy() * np.sin(inclination) * np.cos(phi)
     # Calcualte PROJECTED radius from cluster center
-    newObj.r = np.sqrt(newObj.x**2+newObj.y**2)
+    newObj.r = np.sqrt(newObj.x.copy()**2+newObj.y.copy()**2)  
+
+    if theta != None:    # Rotate in theta
+      x = newObj.x * np.cos(theta) - newObj.y*np.sin(theta) 
+      y = newObj.x * np.sin(theta) + newObj.y*np.cos(theta)
+      vx = newObj.vx * np.cos(theta) - newObj.vy*np.sin(theta) 
+      vy = newObj.vx * np.sin(theta) + newObj.vy*np.cos(theta)
+      newObj.x = x
+      newObj.y = y
+      newObj.vx = vx
+      newObj.vy = vy
+      # Calcualte PROJECTED radius from cluster center
+      newObj.r = np.sqrt(newObj.x**2+newObj.y**2)
     
     return newObj
 
